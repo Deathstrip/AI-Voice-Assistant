@@ -39,22 +39,12 @@ async def process_audio(file: UploadFile = File(...)):
         )
         ai_response_text = gpt_response["choices"][0]["text"].strip()
 
-        # Use OpenAI TTS to generate audio from the response
-        tts_response = openai.Audio.create_tts(
-            text=ai_response_text,
-            voice="Joanna"  # Replace with the preferred voice
-        )
+        # (Optional) Text-to-Speech integration can be added here
 
-        # Save TTS output audio temporarily
-        audio_output_path = temp_file_path.replace(".wav", "_response.mp3")
-        with open(audio_output_path, "wb") as audio_file:
-            audio_file.write(tts_response["audio"])
-
-        # Return AI text and TTS audio file URL
+        # Return AI text response
         return JSONResponse(
             content={
                 "responseText": ai_response_text,
-                "audioUrl": f"/get-audio/{os.path.basename(audio_output_path)}"
             }
         )
 
@@ -67,7 +57,6 @@ async def process_audio(file: UploadFile = File(...)):
         return JSONResponse(
             status_code=500, content={"error": f"Internal Server Error: {str(e)}"}
         )
-
 
 @app.get("/get-audio/{filename}")
 async def get_audio(filename: str):
