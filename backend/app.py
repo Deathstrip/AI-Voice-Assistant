@@ -18,7 +18,7 @@ async def process_audio(file: UploadFile = File(...)):
             temp_file.write(file.file.read())
             temp_file_path = temp_file.name
 
-        # Use OpenAI Whisper API for transcription
+        # Use Whisper API for Speech-to-Text
         with open(temp_file_path, "rb") as audio_file:
             response = openai.Audio.transcribe(
                 model="whisper-1",
@@ -31,15 +31,18 @@ async def process_audio(file: UploadFile = File(...)):
                 status_code=400, content={"error": "Could not transcribe audio."}
             )
 
-        # Use GPT-3 API to generate a response based on the transcribed text
-        gpt_response = openai.Completion.create(
-            engine="text-davinci-003",
-            prompt=user_query,
+        # Use ChatGPT API to generate a response
+        gpt_response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Use "gpt-4" if needed
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": user_query}
+            ],
             max_tokens=150
         )
-        ai_response_text = gpt_response["choices"][0]["text"].strip()
+        ai_response_text = gpt_response['choices'][0]['message']['content'].strip()
 
-        # Return the AI's response as JSON
+        # Return the AI's text response
         return JSONResponse(
             content={
                 "responseText": ai_response_text,
