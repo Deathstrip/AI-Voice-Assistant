@@ -20,8 +20,11 @@ async def process_audio(file: UploadFile = File(...)):
 
         # Use Whisper API for Speech-to-Text
         with open(temp_file_path, "rb") as audio_file:
-            transcription = openai.Audio.transcribe("whisper-1", audio_file)
-        user_query = transcription.get("text", "")
+            response = openai.Audio.transcribe(
+                model="whisper-1",
+                file=audio_file
+            )
+        user_query = response.get("text", "")
 
         if not user_query:
             return JSONResponse(
@@ -55,7 +58,7 @@ async def process_audio(file: UploadFile = File(...)):
             }
         )
 
-    except openai.error.OpenAIError as e:
+    except openai.OpenAIError as e:
         return JSONResponse(
             status_code=500, content={"error": f"OpenAI API Error: {str(e)}"}
         )
@@ -64,6 +67,7 @@ async def process_audio(file: UploadFile = File(...)):
         return JSONResponse(
             status_code=500, content={"error": f"Internal Server Error: {str(e)}"}
         )
+
 
 @app.get("/get-audio/{filename}")
 async def get_audio(filename: str):
