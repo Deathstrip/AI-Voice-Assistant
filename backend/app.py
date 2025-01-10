@@ -1,5 +1,5 @@
 from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 import openai
 import os
 from tempfile import NamedTemporaryFile
@@ -13,12 +13,12 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 @app.post("/process-audio/")
 async def process_audio(file: UploadFile = File(...)):
     try:
-        # Save uploaded audio file temporarily
+        # Save the uploaded audio file temporarily
         with NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
             temp_file.write(file.file.read())
             temp_file_path = temp_file.name
 
-        # Use Whisper API for Speech-to-Text
+        # Use OpenAI Whisper API for transcription
         with open(temp_file_path, "rb") as audio_file:
             response = openai.Audio.transcribe(
                 model="whisper-1",
@@ -31,7 +31,7 @@ async def process_audio(file: UploadFile = File(...)):
                 status_code=400, content={"error": "Could not transcribe audio."}
             )
 
-        # Use GPT API to generate a response
+        # Use GPT-3 API to generate a response based on the transcribed text
         gpt_response = openai.Completion.create(
             engine="text-davinci-003",
             prompt=user_query,
@@ -39,9 +39,7 @@ async def process_audio(file: UploadFile = File(...)):
         )
         ai_response_text = gpt_response["choices"][0]["text"].strip()
 
-        # (Optional) Text-to-Speech integration can be added here
-
-        # Return AI text response
+        # Return the AI's response as JSON
         return JSONResponse(
             content={
                 "responseText": ai_response_text,
@@ -57,13 +55,6 @@ async def process_audio(file: UploadFile = File(...)):
         return JSONResponse(
             status_code=500, content={"error": f"Internal Server Error: {str(e)}"}
         )
-
-@app.get("/get-audio/{filename}")
-async def get_audio(filename: str):
-    audio_path = f"/tmp/{filename}"  # Adjust this based on where temp files are saved
-    if os.path.exists(audio_path):
-        return FileResponse(audio_path, media_type="audio/mpeg")
-    return JSONResponse(status_code=404, content={"error": "Audio file not found."})
 
 if __name__ == "__main__":
     import uvicorn
