@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Voice Assistant</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AI Voice Assistant</h1>
+      <p>Ask your question and let the assistant respond in real-time!</p>
+    </header>
+    <main>
+      <div class="display">
+        <div class="query-box">
+          <h3>Your Query</h3>
+          <p id="query-text">Say something...</p>
+        </div>
+        <div class="response-box">
+          <h3>AI Response</h3>
+          <p id="response-text">Waiting for your query...</p>
+        </div>
+      </div>
+      <button id="mic-button" class="button-primary">🎤 Start Listening</button>
+      <audio id="ai-audio" controls style="display: none;"></audio>
+    </main>
+    <footer>
+      <p>Powered by OpenAI APIs</p>
+    </footer>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>
