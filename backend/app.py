@@ -1,5 +1,5 @@
 from fastapi import FastAPI, File, UploadFile
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 import openai
 import os
 from tempfile import NamedTemporaryFile
@@ -7,42 +7,70 @@ from tempfile import NamedTemporaryFile
 # Initialize FastAPI app
 app = FastAPI()
 
-# Set your OpenAI API key
-openai.api_key = "YOUR_OPENAI_API_KEY"
+# Set OpenAI API Key from environment variables
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @app.post("/process-audio/")
 async def process_audio(file: UploadFile = File(...)):
-    # Save the uploaded file
-    with NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
-        temp_file.write(file.file.read())
-        temp_file_path = temp_file.name
+    try:
+        # Save uploaded audio file temporarily
+        with NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
+            temp_file.write(file.file.read())
+            temp_file_path = temp_file.name
 
-    # Convert audio to text using OpenAI Whisper API
-    with open(temp_file_path, "rb") as audio_file:
-        transcription = openai.Audio.transcribe("whisper-1", audio_file)
-    text_query = transcription.get("text", "")
+        # Use Whisper API for Speech-to-Text
+        with open(temp_file_path, "rb") as audio_file:
+            transcription = openai.Audio.transcribe("whisper-1", audio_file)
+        user_query = transcription.get("text", "")
 
-    # Generate AI response using GPT
-    gpt_response = openai.Completion.create(
-        engine="text-davinci-003",
-        prompt=text_query,
-        max_tokens=150
-    )
-    ai_text_response = gpt_response["choices"][0]["text"].strip()
+        if not user_query:
+            return JSONResponse(
+                status_code=400, content={"error": "Could not transcribe audio."}
+            )
 
-    # Convert GPT response to audio using OpenAI TTS (mock example)
-    tts_response = openai.Audio.create_tts(
-        text=ai_text_response,
-        voice="Joanna"  # Replace with preferred voice
-    )
+        # Use GPT API to generate a response
+        gpt_response = openai.Completion.create(
+            engine="text-davinci-003",
+            prompt=user_query,
+            max_tokens=150
+        )
+        ai_response_text = gpt_response["choices"][0]["text"].strip()
 
-    # Save the audio response to a file
-    audio_output_path = temp_file_path.replace(".wav", "_response.mp3")
-    with open(audio_output_path, "wb") as audio_file:
-        audio_file.write(tts_response["audio"])
+        # Use OpenAI TTS to generate audio from the response
+        tts_response = openai.Audio.create_tts(
+            text=ai_response_text,
+            voice="Joanna"  # Replace with the preferred voice
+        )
 
-    # Return the audio file to the frontend
-    return FileResponse(audio_output_path, media_type="audio/mpeg")
+        # Save TTS output audio temporarily
+        audio_output_path = temp_file_path.replace(".wav", "_response.mp3")
+        with open(audio_output_path, "wb") as audio_file:
+            audio_file.write(tts_response["audio"])
+
+        # Return AI text and TTS audio file URL
+        return JSONResponse(
+            content={
+                "responseText": ai_response_text,
+                "audioUrl": f"/get-audio/{os.path.basename(audio_output_path)}"
+            }
+        )
+
+    except openai.error.OpenAIError as e:
+        return JSONResponse(
+            status_code=500, content={"error": f"OpenAI API Error: {str(e)}"}
+        )
+
+    except Exception as e:
+        return JSONResponse(
+            status_code=500, content={"error": f"Internal Server Error: {str(e)}"}
+        )
+
+@app.get("/get-audio/{filename}")
+async def get_audio(filename: str):
+    audio_path = f"/tmp/{filename}"  # Adjust this based on where temp files are saved
+    if os.path.exists(audio_path):
+        return FileResponse(audio_path, media_type="audio/mpeg")
+    return JSONResponse(status_code=404, content={"error": "Audio file not found."})
 
 if __name__ == "__main__":
     import uvicorn
