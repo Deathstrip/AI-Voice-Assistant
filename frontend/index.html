@@ -10,11 +10,14 @@
     <div class="container">
         <h1>AI Voice Assistant</h1>
         <div class="mic-container">
-            <button id="micButton" class="mic-button idle" onclick="toggleRecording()">
+            <!-- Microphone Button -->
+            <button id="micButton" class="mic-button" onclick="toggleRecording()">
                 <i id="micIcon" class="fas fa-microphone"></i>
             </button>
-            <p id="micStatus" class="status">Click to start</p>
+            <!-- Microphone Status -->
+            <p id="micStatus" class="status">Click to start speaking</p>
         </div>
+        <!-- AI Response -->
         <div id="result" class="response"></div>
     </div>
     <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
