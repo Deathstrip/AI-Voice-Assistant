@@ -1,3 +1,4 @@
+/* General Styling */
 body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -24,18 +25,23 @@ h1 {
     color: #333333;
 }
 
+/* Microphone Container */
 .mic-container {
     margin-top: 20px;
     position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
+/* Microphone Button */
 .mic-button {
-    background-color: #007bff;
+    background-color: #ff4757;
     color: #ffffff;
     border: none;
     border-radius: 50%;
-    width: 70px;
-    height: 70px;
+    width: 80px;
+    height: 80px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -45,24 +51,26 @@ h1 {
 }
 
 .mic-button:hover {
-    background-color: #0056b3;
+    background-color: #e84141;
     transform: scale(1.1);
 }
 
-.mic-button.active {
-    background-color: #ff3b3b;
-}
-
 .mic-button i {
-    font-size: 1.5rem;
+    font-size: 2rem;
 }
 
+.mic-button.active {
+    background-color: #1dd1a1;
+}
+
+/* Microphone Status Text */
 .status {
     font-size: 0.9rem;
     color: #555555;
-    margin-top: 10px;
+    margin-top: 15px;
 }
 
+/* Response Section */
 .response {
     margin-top: 20px;
     font-size: 1rem;
