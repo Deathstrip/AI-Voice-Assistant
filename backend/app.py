@@ -6,6 +6,8 @@ import base64
 from io import BytesIO
 from tempfile import NamedTemporaryFile
 from gtts import gTTS
+from fastapi.middleware.cors import CORSMiddleware
+
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -74,3 +76,10 @@ async def process_audio(audio_base64: str):
         return JSONResponse(
             status_code=500, content={"error": f"Internal Server Error: {str(e)}"}
         )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],  # Allow requests from any origin
+        allow_credentials=True,
+        allow_methods=["*"],  # Allow all HTTP methods
+        allow_headers=["*"],  # Allow all headers
+)
