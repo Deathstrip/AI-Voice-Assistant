@@ -1,8 +1,11 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 import openai
 import os
+import base64
+from io import BytesIO
 from tempfile import NamedTemporaryFile
+from gtts import gTTS
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -11,11 +14,14 @@ app = FastAPI()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 @app.post("/process-audio/")
-async def process_audio(file: UploadFile = File(...)):
+async def process_audio(audio_base64: str):
     try:
-        # Save the uploaded audio file temporarily
+        # Decode the base64 audio data
+        audio_data = base64.b64decode(audio_base64)
+
+        # Save the audio data as a temporary WAV file
         with NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
-            temp_file.write(file.file.read())
+            temp_file.write(audio_data)
             temp_file_path = temp_file.name
 
         # Use Whisper API for Speech-to-Text
@@ -31,7 +37,7 @@ async def process_audio(file: UploadFile = File(...)):
                 status_code=400, content={"error": "Could not transcribe audio."}
             )
 
-        # Use ChatGPT API to generate a response
+        # Use GPT API to generate a response
         gpt_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",  # Use "gpt-4" if needed
             messages=[
@@ -42,10 +48,20 @@ async def process_audio(file: UploadFile = File(...)):
         )
         ai_response_text = gpt_response['choices'][0]['message']['content'].strip()
 
-        # Return the AI's text response
+        # Convert text to speech using gTTS
+        tts = gTTS(text=ai_response_text, lang="en")
+        audio_io = BytesIO()
+        tts.write_to_fp(audio_io)
+        audio_io.seek(0)
+
+        # Encode the generated audio as base64
+        audio_base64 = base64.b64encode(audio_io.read()).decode("utf-8")
+
+        # Return AI text response and audio as base64
         return JSONResponse(
             content={
                 "responseText": ai_response_text,
+                "audioBase64": audio_base64
             }
         )
 
@@ -58,7 +74,3 @@ async def process_audio(file: UploadFile = File(...)):
         return JSONResponse(
             status_code=500, content={"error": f"Internal Server Error: {str(e)}"}
         )
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
