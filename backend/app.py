@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -12,7 +12,7 @@ from io import BytesIO
 # Initialize FastAPI app
 app = FastAPI()
 
-# CORS Middleware to allow requests from your frontend
+# CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://ai-voice-assistant-rawaf-global.onrender.com"],  # Frontend URL
@@ -32,15 +32,6 @@ class AudioRequest(BaseModel):
 async def process_audio(request: AudioRequest):
     try:
         audio_base64 = request.audio_base64
-
-        # Debugging: Log incoming request
-        print("Received Request")
-        print(f"Audio Base64 Length: {len(audio_base64) if audio_base64 else 'No Data'}")
-
-        if not audio_base64:
-            return JSONResponse(
-                status_code=422, content={"error": "Invalid or missing audio_base64 payload."}
-            )
 
         # Decode the base64 audio data
         audio_data = base64.b64decode(audio_base64)
