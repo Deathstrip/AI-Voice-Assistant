@@ -54,11 +54,15 @@ async def process_audio(request: AudioRequest):
                 status_code=400, content={"error": "Could not transcribe audio."}
             )
 
+        # Detect language (if needed) or directly ensure English/Arabic
+        is_arabic = any(char in "ءاآإأبجدهوزحطكلمنسعفصقكلمهةىي" for char in user_query)
+
         # Use GPT API to generate a response
+        language = "Arabic" if is_arabic else "English"
         gpt_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "system", "content": f"You are a helpful assistant. Respond in {language} only."},
                 {"role": "user", "content": user_query}
             ],
             max_tokens=150
@@ -66,7 +70,8 @@ async def process_audio(request: AudioRequest):
         ai_response_text = gpt_response['choices'][0]['message']['content'].strip()
 
         # Convert text to speech using gTTS
-        tts = gTTS(text=ai_response_text, lang="en")
+        tts_lang = "ar" if is_arabic else "en"
+        tts = gTTS(text=ai_response_text, lang=tts_lang)
         audio_io = BytesIO()
         tts.write_to_fp(audio_io)
         audio_io.seek(0)
