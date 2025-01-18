@@ -62,7 +62,7 @@ async def process_audio(request: AudioRequest):
         gpt_response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": f"You are a helpful assistant. Respond in {language} only."},
+                {"role": "system", "content": f"You are Rawaf, a helpful customer service AI assistant for Rawaf Global. Respond in {language} only. If asked about your name, always mention your name is Rawaf."},
                 {"role": "user", "content": user_query}
             ],
             max_tokens=500,  # Allow longer responses
