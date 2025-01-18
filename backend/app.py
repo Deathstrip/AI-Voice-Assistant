@@ -4,11 +4,12 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import openai
 import os
+import requests
+import json
 import pandas as pd
-from io import BytesIO
 from tempfile import NamedTemporaryFile
 import base64
-from gtts import gTTS
+from io import BytesIO
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -16,14 +17,15 @@ app = FastAPI()
 # CORS Middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://ai-voice-assistant-rawaf-global.onrender.com"],  # Frontend URL
+    allow_origins=["*"],  # Allow requests from all origins
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Set OpenAI API Key from environment variables
+# Set OpenAI API Key and Google Cloud API Key from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
+google_tts_api_key = os.getenv("GOOGLE_TTS_API_KEY")
 
 # Define model for incoming audio request
 class AudioRequest(BaseModel):
@@ -51,6 +53,24 @@ def search_excel(query):
         print(f"Error reading Excel file: {e}")
         return None
 
+# Function to convert text to speech using Google Cloud TTS
+def text_to_speech_google(text):
+    url = f"https://texttospeech.googleapis.com/v1/text:synthesize?key={google_tts_api_key}"
+    headers = {"Content-Type": "application/json"}
+    data = {
+        "input": {"text": text},
+        "voice": {"languageCode": "en-US", "ssmlGender": "FEMALE"},
+        "audioConfig": {"audioEncoding": "MP3"}
+    }
+
+    response = requests.post(url, headers=headers, data=json.dumps(data))
+    if response.status_code == 200:
+        audio_content = response.json().get("audioContent")
+        return audio_content
+    else:
+        print("Error in TTS API:", response.json())
+        return None
+
 @app.post("/")
 async def process_audio(request: AudioRequest):
     try:
@@ -68,7 +88,7 @@ async def process_audio(request: AudioRequest):
                 model="whisper-1",
                 file=audio_file
             )
-        user_query = response.get("text", "")
+        user_query = response.get("text", "").strip()
 
         if not user_query:
             return JSONResponse(
@@ -89,19 +109,18 @@ async def process_audio(request: AudioRequest):
                     {"role": "system", "content": "You are Rawaf, a helpful customer service AI assistant for Rawaf Global. Always respond in English."},
                     {"role": "user", "content": user_query}
                 ],
-                max_tokens=500,  # Allow longer responses
-                temperature=0.7  # Adjust creativity if needed
+                max_tokens=500,
+                temperature=0.7
             )
             ai_response_text = gpt_response['choices'][0]['message']['content'].strip()
 
-        # Convert the final response to speech using gTTS (forced to English)
-        tts = gTTS(text=ai_response_text, lang="en")
-        audio_io = BytesIO()
-        tts.write_to_fp(audio_io)
-        audio_io.seek(0)
+        # Convert the final response to speech using Google TTS
+        audio_base64 = text_to_speech_google(ai_response_text)
 
-        # Encode the generated audio as base64
-        audio_base64 = base64.b64encode(audio_io.read()).decode("utf-8")
+        if not audio_base64:
+            return JSONResponse(
+                status_code=500, content={"error": "Text-to-Speech conversion failed."}
+            )
 
         # Return AI text response and audio as base64
         return JSONResponse(
