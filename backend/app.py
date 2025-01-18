@@ -65,7 +65,8 @@ async def process_audio(request: AudioRequest):
                 {"role": "system", "content": f"You are a helpful assistant. Respond in {language} only."},
                 {"role": "user", "content": user_query}
             ],
-            max_tokens=150
+            max_tokens=500,  # Allow longer responses
+            temperature=0.7  # Adjust creativity if needed
         )
         ai_response_text = gpt_response['choices'][0]['message']['content'].strip()
 
