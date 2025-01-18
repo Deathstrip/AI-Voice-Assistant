@@ -1,21 +1,29 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import openai
 import os
-import base64
-from io import BytesIO
 from tempfile import NamedTemporaryFile
+from io import BytesIO
+import base64
 from gtts import gTTS
-from fastapi.middleware.cors import CORSMiddleware
-
 
 # Initialize FastAPI app
 app = FastAPI()
 
+# CORS Middleware to allow requests from your frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://ai-voice-assistant-rawaf-global.onrender.com"],  # Allow requests from your frontend
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
+
 # Set OpenAI API Key from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-@app.post("/process-audio/")
+@app.post("/")
 async def process_audio(audio_base64: str):
     try:
         # Decode the base64 audio data
@@ -76,10 +84,3 @@ async def process_audio(audio_base64: str):
         return JSONResponse(
             status_code=500, content={"error": f"Internal Server Error: {str(e)}"}
         )
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],  # Allow requests from any origin
-        allow_credentials=True,
-        allow_methods=["*"],  # Allow all HTTP methods
-        allow_headers=["*"],  # Allow all headers
-)
