@@ -1,12 +1,13 @@
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 import openai
 import os
 from tempfile import NamedTemporaryFile
-from io import BytesIO
 import base64
 from gtts import gTTS
+from io import BytesIO
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -14,18 +15,33 @@ app = FastAPI()
 # CORS Middleware to allow requests from your frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://ai-voice-assistant-rawaf-global.onrender.com"],  # Allow requests from your frontend
+    allow_origins=["https://ai-voice-assistant-rawaf-global.onrender.com"],  # Frontend URL
     allow_credentials=True,
-    allow_methods=["*"],  # Allow all HTTP methods
-    allow_headers=["*"],  # Allow all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Set OpenAI API Key from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# Define Pydantic model for request validation
+class AudioRequest(BaseModel):
+    audio_base64: str
+
 @app.post("/")
-async def process_audio(audio_base64: str):
+async def process_audio(request: AudioRequest):
     try:
+        audio_base64 = request.audio_base64
+
+        # Debugging: Log incoming request
+        print("Received Request")
+        print(f"Audio Base64 Length: {len(audio_base64) if audio_base64 else 'No Data'}")
+
+        if not audio_base64:
+            return JSONResponse(
+                status_code=422, content={"error": "Invalid or missing audio_base64 payload."}
+            )
+
         # Decode the base64 audio data
         audio_data = base64.b64decode(audio_base64)
 
@@ -49,7 +65,7 @@ async def process_audio(audio_base64: str):
 
         # Use GPT API to generate a response
         gpt_response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",  # Use "gpt-4" if needed
+            model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "You are a helpful assistant."},
                 {"role": "user", "content": user_query}
