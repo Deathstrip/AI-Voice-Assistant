@@ -4,3 +4,5 @@ openai==0.28.0
 pydub
 python-multipart
 gTTS
+pandas
+openpyxl
