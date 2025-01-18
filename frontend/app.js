@@ -23,6 +23,7 @@ async function toggleRecording() {
     } else {
         // Start recording
         micButton.classList.add("active");
+        micButton.classList.remove("idle");
         micIcon.classList.remove("fa-microphone");
         micIcon.classList.add("fa-microphone-slash");
         micStatus.textContent = "Listening...";
