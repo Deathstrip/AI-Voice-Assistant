@@ -86,7 +86,7 @@ async def process_audio(request: AudioRequest):
             gpt_response = openai.ChatCompletion.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "You are Rawaf, a helpful customer service AI assistant for Rawaf Global."},
+                    {"role": "system", "content": "You are Rawaf, a helpful customer service AI assistant for Rawaf Global. Always respond in English."},
                     {"role": "user", "content": user_query}
                 ],
                 max_tokens=500,  # Allow longer responses
@@ -94,9 +94,8 @@ async def process_audio(request: AudioRequest):
             )
             ai_response_text = gpt_response['choices'][0]['message']['content'].strip()
 
-        # Convert the final response to speech using gTTS
-        tts_lang = "ar" if any(char in "ءاآإأبجدهوزحطكلمنسعفصقكلمهةىي" for char in ai_response_text) else "en"
-        tts = gTTS(text=ai_response_text, lang=tts_lang)
+        # Convert the final response to speech using gTTS (forced to English)
+        tts = gTTS(text=ai_response_text, lang="en")
         audio_io = BytesIO()
         tts.write_to_fp(audio_io)
         audio_io.seek(0)
