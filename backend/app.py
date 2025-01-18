@@ -25,24 +25,26 @@ app.add_middleware(
 # Set OpenAI API Key from environment variables
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# Define model for incoming request
+# Define model for incoming audio request
 class AudioRequest(BaseModel):
     audio_base64: str
 
-# Define function to search for a response in the Excel file
+# Path to the Excel file
+EXCEL_FILE_PATH = "data.xlsx"
+
+# Function to search for a response in the Excel file
 def search_excel(query):
     try:
-        file_path = "data.xlsx"  # Path to your Excel file
-        if not os.path.exists(file_path):
+        if not os.path.exists(EXCEL_FILE_PATH):
             return None
 
         # Load the Excel file
-        df = pd.read_excel(file_path)
+        df = pd.read_excel(EXCEL_FILE_PATH)
 
         # Search for the query in the Excel data (case-insensitive)
         for _, row in df.iterrows():
-            if query.lower() in str(row['Query']).lower():
-                return row['Response']  # Return the matched response
+            if query.lower() in str(row["Query"]).lower():
+                return row["Response"]  # Return the matched response
 
         return None
     except Exception as e:
@@ -52,10 +54,8 @@ def search_excel(query):
 @app.post("/")
 async def process_audio(request: AudioRequest):
     try:
-        audio_base64 = request.audio_base64
-
         # Decode the base64 audio data
-        audio_data = base64.b64decode(audio_base64)
+        audio_data = base64.b64decode(request.audio_base64)
 
         # Save the audio data as a temporary WAV file
         with NamedTemporaryFile(delete=False, suffix=".wav") as temp_file:
